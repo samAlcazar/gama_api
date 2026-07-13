@@ -34,21 +34,43 @@ func main() {
 	log.Println("Conexión a la base de datos establecida correctamente")
 
 	userRepo := repository.NewUserRepository(database)
+	deptRepo := repository.NewDepartmentRepository(database)
+
 	authService := service.NewAuthService(cfg, userRepo)
+	deptService := service.NewDepartmentService(deptRepo)
+	userService := service.NewUserService(userRepo, deptRepo)
+
 	authHandler := handler.NewAuthHandler(authService)
+	deptHandler := handler.NewDepartmentHandler(deptService)
+	userHandler := handler.NewUserHandler(userService)
 
 	mux := http.NewServeMux()
 
-	// Rutas Públicas
 	mux.HandleFunc("POST /api/v1/auth/login", authHandler.Login)
 
-	// Rutas Protegidas (Middleware de Autenticación JWT)
 	authMW := middleware.AuthMiddleware(cfg)
 
-	// Endpoint /me
 	mux.Handle("GET /api/v1/auth/me", authMW(http.HandlerFunc(authHandler.Me)))
 
-	// Endpoint administrativo de prueba (requiere permiso específico AUDITORIA_VER)
+	mux.Handle("GET /api/v1/departments", authMW(http.HandlerFunc(deptHandler.List)))
+	mux.Handle("POST /api/v1/departments", authMW(http.HandlerFunc(deptHandler.Create)))
+
+	mux.Handle("GET /api/v1/users", authMW(
+		middleware.RequirePermission("USUARIO_VER")(http.HandlerFunc(userHandler.List)),
+	))
+	mux.Handle("GET /api/v1/users/{id}", authMW(
+		middleware.RequirePermission("USUARIO_VER")(http.HandlerFunc(userHandler.GetByID)),
+	))
+	mux.Handle("POST /api/v1/users", authMW(
+		middleware.RequirePermission("USUARIO_CREAR")(http.HandlerFunc(userHandler.Create)),
+	))
+	mux.Handle("PUT /api/v1/users/{id}", authMW(
+		middleware.RequirePermission("USUARIO_EDITAR")(http.HandlerFunc(userHandler.Update)),
+	))
+	mux.Handle("DELETE /api/v1/users/{id}", authMW(
+		middleware.RequirePermission("USUARIO_DESACTIVAR")(http.HandlerFunc(userHandler.Deactivate)),
+	))
+
 	adminTestHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
