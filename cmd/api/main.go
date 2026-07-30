@@ -83,7 +83,7 @@ func main() {
 	serverAddr := ":" + cfg.Port
 	srv := &http.Server{
 		Addr:    serverAddr,
-		Handler: mux,
+		Handler: middleware.CORSMiddleware(mux),
 	}
 
 	go func() {
