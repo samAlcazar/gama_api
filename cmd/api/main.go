@@ -35,14 +35,20 @@ func main() {
 
 	userRepo := repository.NewUserRepository(database)
 	deptRepo := repository.NewDepartmentRepository(database)
+	applicantRepo := repository.NewApplicantRepository(database)
+	roadmapRepo := repository.NewRoadmapRepository(database)
 
 	authService := service.NewAuthService(cfg, userRepo)
 	deptService := service.NewDepartmentService(deptRepo)
 	userService := service.NewUserService(userRepo, deptRepo)
+	applicantService := service.NewApplicantService(applicantRepo)
+	roadmapService := service.NewRoadmapService(roadmapRepo, applicantRepo, deptRepo, userRepo)
 
 	authHandler := handler.NewAuthHandler(authService)
 	deptHandler := handler.NewDepartmentHandler(deptService)
 	userHandler := handler.NewUserHandler(userService)
+	applicantHandler := handler.NewApplicantHandler(applicantService)
+	roadmapHandler := handler.NewRoadmapHandler(roadmapService)
 
 	mux := http.NewServeMux()
 
@@ -69,6 +75,37 @@ func main() {
 	))
 	mux.Handle("DELETE /api/v1/users/{id}", authMW(
 		middleware.RequirePermission("USUARIO_DESACTIVAR")(http.HandlerFunc(userHandler.Deactivate)),
+	))
+
+	// Solicitantes / Interesados
+	mux.Handle("POST /api/v1/applicants", authMW(
+		middleware.RequirePermission("TRAMITE_CREAR")(http.HandlerFunc(applicantHandler.Create)),
+	))
+	mux.Handle("GET /api/v1/applicants", authMW(
+		middleware.RequirePermission("TRAMITE_VER_BANDEJA")(http.HandlerFunc(applicantHandler.List)),
+	))
+	mux.Handle("GET /api/v1/applicants/{id}", authMW(
+		middleware.RequirePermission("TRAMITE_VER_BANDEJA")(http.HandlerFunc(applicantHandler.GetByID)),
+	))
+
+	// Hojas de Ruta / Trámites y Derivaciones
+	mux.Handle("POST /api/v1/roadmaps", authMW(
+		middleware.RequirePermission("TRAMITE_CREAR")(http.HandlerFunc(roadmapHandler.Create)),
+	))
+	mux.Handle("GET /api/v1/roadmaps", authMW(
+		middleware.RequirePermission("TRAMITE_VER_BANDEJA")(http.HandlerFunc(roadmapHandler.ListVisible)),
+	))
+	mux.Handle("GET /api/v1/roadmaps/inbox", authMW(
+		middleware.RequirePermission("TRAMITE_VER_BANDEJA")(http.HandlerFunc(roadmapHandler.GetInbox)),
+	))
+	mux.Handle("GET /api/v1/roadmaps/{id}", authMW(
+		middleware.RequirePermission("TRAMITE_VER_BANDEJA")(http.HandlerFunc(roadmapHandler.GetByID)),
+	))
+	mux.Handle("POST /api/v1/roadmaps/{id}/movements", authMW(
+		middleware.RequirePermission("TRAMITE_DERIVAR")(http.HandlerFunc(roadmapHandler.Derive)),
+	))
+	mux.Handle("PATCH /api/v1/roadmaps/{id}/status", authMW(
+		middleware.RequirePermission("TRAMITE_RESOLVER")(http.HandlerFunc(roadmapHandler.UpdateStatus)),
 	))
 
 	adminTestHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

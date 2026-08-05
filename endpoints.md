@@ -126,3 +126,84 @@ Este archivo documenta los endpoints HTTP implementados en la API de Go y sirve 
 ### 10. Consultar Logs de Auditoría (`GET /api/v1/admin/audit`)
 *   **Acceso**: Protegido (Requiere permiso `AUDITORIA_VER`)
 *   **Descripción**: Ruta de prueba del sistema de autorización para corroborar que el middleware de permisos detallados restringe las solicitudes correctamente.
+
+---
+
+## 📑 Solicitantes / Interesados
+
+### 11. Registrar Solicitante (`POST /api/v1/applicants`)
+*   **Acceso**: Protegido (Requiere permiso `TRAMITE_CREAR`)
+*   **Descripción**: Registra un nuevo ciudadano o empresa demandante en el sistema.
+*   **Cuerpo (JSON)**:
+    ```json
+    {
+      "full_name": "Empresa Comercializadora Los Andes S.R.L.",
+      "ci_nit": "10293847012",
+      "email": "contacto@losandes.bo",
+      "phone": "+591 78901234"
+    }
+    ```
+
+### 12. Listar Solicitantes (`GET /api/v1/applicants`)
+*   **Acceso**: Protegido (Requiere permiso `TRAMITE_VER_BANDEJA`)
+*   **Descripción**: Retorna la lista completa de personas e interesados registrados.
+
+---
+
+## 📜 Hojas de Ruta y Recorrido del Expediente
+
+### 13. Crear Nueva Hoja de Ruta (`POST /api/v1/roadmaps`)
+*   **Acceso**: Protegido (Requiere permiso `TRAMITE_CREAR`)
+*   **Descripción**: Registra una nueva Hoja de Ruta. Genera automáticamente el número correlativo anual (ej. `HR-0002/2026`), crea el primer paso de derivación inicial y permite asociar un solicitante existente (`applicant_id`) o registrar uno nuevo inline (`new_applicant`).
+*   **Cuerpo (JSON)**:
+    ```json
+    {
+      "procedure_code": "LIC-2026-05",
+      "pages_count": 8,
+      "subject": "Solicitud de Licencia de Funcionamiento para Actividad Comercial de Restobar",
+      "priority": "ALTA",
+      "new_applicant": {
+        "full_name": "Empresa Comercializadora Los Andes S.R.L.",
+        "ci_nit": "10293847012",
+        "email": "contacto@losandes.bo",
+        "phone": "+591 78901234"
+      },
+      "destination_department_id": "d0000000-0004-4000-8000-000000000002",
+      "instruction": "Remítase a la DAF para verificación de pago de patentes municipales."
+    }
+    ```
+
+### 14. Listar Hojas de Ruta Visibles (`GET /api/v1/roadmaps`)
+*   **Acceso**: Protegido (Requiere permiso `TRAMITE_VER_BANDEJA`)
+*   **Descripción**: Devuelve los trámites visibles según el rol del usuario autenticado. Si el usuario es Alcalde, Admin o Sec. General (`TRAMITE_VER_TODOS`), retorna todos los trámites del municipio; de lo contrario, muestra solo los vinculados a su unidad o puesto.
+
+### 15. Consultar Bandeja de Entrada Activa (`GET /api/v1/roadmaps/inbox`)
+*   **Acceso**: Protegido (Requiere permiso `TRAMITE_VER_BANDEJA`)
+*   **Descripción**: Muestra los expedientes físicos/digitales pendientes que se encuentran actualmente recepcionados o asignados en la dependencia del usuario.
+
+### 16. Ver Expediente e Historial de Recorrido (`GET /api/v1/roadmaps/{id}`)
+*   **Acceso**: Protegido (Requiere permiso `TRAMITE_VER_BANDEJA`)
+*   **Descripción**: Retorna la cabecera completa del trámite junto con su historial ordenado de derivaciones (pasos 1, 2, 3...), con sellos, firmas e instrucciones.
+
+### 17. Derivar Trámite a Otra Dependencia (`POST /api/v1/roadmaps/{id}/movements`)
+*   **Acceso**: Protegido (Requiere permiso `TRAMITE_DERIVAR`)
+*   **Descripción**: Cierra el paso de derivación actual estampando fecha/hora de salida y firma del funcionario, y crea el siguiente paso numerado (`step_number + 1`) con estado `PENDIENTE`.
+*   **Cuerpo (JSON)**:
+    ```json
+    {
+      "destination_department_id": "d0000000-0005-4000-8000-000000000002",
+      "assigned_user_id": "b1b2c3d4-0001-4000-8000-000000000001",
+      "instruction": "Se verificó la patente. Derívese a Soporte Técnico para habilitación de cuenta."
+    }
+    ```
+
+### 18. Actualizar Estado Global de Trámite (`PATCH /api/v1/roadmaps/{id}/status`)
+*   **Acceso**: Protegido (Requiere permiso `TRAMITE_RESOLVER`)
+*   **Descripción**: Cambia el estado del expediente (`RESUELTO`, `CONCLUIDO`, `ARCHIVADO`, `RECHAZADO`).
+*   **Cuerpo (JSON)**:
+    ```json
+    {
+      "status": "CONCLUIDO"
+    }
+    ```
+
