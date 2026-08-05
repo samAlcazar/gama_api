@@ -37,18 +37,21 @@ func main() {
 	deptRepo := repository.NewDepartmentRepository(database)
 	applicantRepo := repository.NewApplicantRepository(database)
 	roadmapRepo := repository.NewRoadmapRepository(database)
+	attachmentRepo := repository.NewAttachmentRepository(database)
 
 	authService := service.NewAuthService(cfg, userRepo)
 	deptService := service.NewDepartmentService(deptRepo)
 	userService := service.NewUserService(userRepo, deptRepo)
 	applicantService := service.NewApplicantService(applicantRepo)
 	roadmapService := service.NewRoadmapService(roadmapRepo, applicantRepo, deptRepo, userRepo)
+	attachmentService := service.NewAttachmentService(attachmentRepo, roadmapRepo, "./uploads")
 
 	authHandler := handler.NewAuthHandler(authService)
 	deptHandler := handler.NewDepartmentHandler(deptService)
 	userHandler := handler.NewUserHandler(userService)
 	applicantHandler := handler.NewApplicantHandler(applicantService)
 	roadmapHandler := handler.NewRoadmapHandler(roadmapService)
+	attachmentHandler := handler.NewAttachmentHandler(attachmentService)
 
 	mux := http.NewServeMux()
 
@@ -106,6 +109,20 @@ func main() {
 	))
 	mux.Handle("PATCH /api/v1/roadmaps/{id}/status", authMW(
 		middleware.RequirePermission("TRAMITE_RESOLVER")(http.HandlerFunc(roadmapHandler.UpdateStatus)),
+	))
+
+	// Documentos Adjuntos / Anexos Escaneados
+	mux.Handle("POST /api/v1/roadmaps/{id}/attachments", authMW(
+		middleware.RequirePermission("TRAMITE_CREAR")(http.HandlerFunc(attachmentHandler.Upload)),
+	))
+	mux.Handle("GET /api/v1/roadmaps/{id}/attachments", authMW(
+		middleware.RequirePermission("TRAMITE_VER_BANDEJA")(http.HandlerFunc(attachmentHandler.List)),
+	))
+	mux.Handle("GET /api/v1/roadmaps/{id}/attachments/{attachment_id}/file", authMW(
+		middleware.RequirePermission("TRAMITE_VER_BANDEJA")(http.HandlerFunc(attachmentHandler.GetFile)),
+	))
+	mux.Handle("DELETE /api/v1/roadmaps/{id}/attachments/{attachment_id}", authMW(
+		middleware.RequirePermission("TRAMITE_CREAR")(http.HandlerFunc(attachmentHandler.Delete)),
 	))
 
 	adminTestHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
