@@ -129,3 +129,59 @@ func (h *UserHandler) Deactivate(w http.ResponseWriter, r *http.Request) {
 
 	respondWithJSON(w, http.StatusOK, map[string]string{"message": "usuario desactivado correctamente"})
 }
+
+func (h *UserHandler) ListRoles(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		respondWithError(w, http.StatusMethodNotAllowed, "método no permitido")
+		return
+	}
+
+	roles, err := h.userService.ListRoles(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, roles)
+}
+
+func (h *UserHandler) ListPermissions(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		respondWithError(w, http.StatusMethodNotAllowed, "método no permitido")
+		return
+	}
+
+	perms, err := h.userService.ListPermissions(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, perms)
+}
+
+func (h *UserHandler) UpdateRolePermissions(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		respondWithError(w, http.StatusMethodNotAllowed, "método no permitido")
+		return
+	}
+
+	roleName := r.PathValue("role_name")
+	if roleName == "" {
+		respondWithError(w, http.StatusBadRequest, "se requiere el nombre del rol en la ruta")
+		return
+	}
+
+	var req model.UpdateRolePermissionsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondWithError(w, http.StatusBadRequest, "cuerpo de solicitud inválido")
+		return
+	}
+
+	if err := h.userService.UpdateRolePermissions(r.Context(), roleName, req.PermissionIDs); err != nil {
+		respondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, map[string]string{"message": "permisos del rol actualizados correctamente"})
+}

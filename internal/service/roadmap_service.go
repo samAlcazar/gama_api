@@ -113,7 +113,7 @@ func (s *RoadmapService) Create(ctx context.Context, creatorUserID string, req *
 		return nil, err
 	}
 
-	originDeptID := &creatorUser.DepartmentID
+	originDeptID := creatorUser.DepartmentID
 
 	rm := &model.Roadmap{
 		RoadmapNumber:      roadmapNumber,
@@ -153,6 +153,10 @@ func (s *RoadmapService) GetInbox(ctx context.Context, userID string) ([]*model.
 	}
 	if user == nil {
 		return nil, errors.New("usuario no encontrado")
+	}
+
+	if user.UserPrincipalRole == "ADMIN" {
+		return s.roadmapRepo.GetInbox(ctx, nil)
 	}
 
 	return s.roadmapRepo.GetInbox(ctx, user.DepartmentID)

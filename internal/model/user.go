@@ -10,7 +10,7 @@ type User struct {
 	UserCI                 string     `json:"user_ci"`
 	UserEmail              *string    `json:"user_email,omitempty"`
 	UserPhone              *string    `json:"user_phone,omitempty"`
-	DepartmentID           string     `json:"department_id"`
+	DepartmentID           *string    `json:"department_id,omitempty"`
 	Charge                 *string    `json:"charge,omitempty"`
 	UserNick               string     `json:"user_nick"`
 	PasswordHash           string     `json:"-"`
@@ -24,8 +24,9 @@ type User struct {
 }
 
 type Role struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Permissions []string `json:"permissions,omitempty"`
 }
 
 type Permission struct {
@@ -33,6 +34,10 @@ type Permission struct {
 	Code        string `json:"code"`
 	Description string `json:"description"`
 	Module      string `json:"module"`
+}
+
+type UpdateRolePermissionsRequest struct {
+	PermissionIDs []string `json:"permission_ids"`
 }
 
 type UserWithPermissions struct {

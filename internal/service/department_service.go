@@ -51,3 +51,55 @@ func (s *DepartmentService) Create(ctx context.Context, d *model.Department) err
 
 	return s.deptRepo.Create(ctx, d)
 }
+
+func (s *DepartmentService) Update(ctx context.Context, d *model.Department) error {
+	if d.ID == "" || d.Name == "" {
+		return errors.New("el id y el nombre del departamento son requeridos")
+	}
+
+	existing, err := s.deptRepo.GetByID(ctx, d.ID)
+	if err != nil {
+		return fmt.Errorf("error obteniendo departamento: %w", err)
+	}
+	if existing == nil {
+		return errors.New("el departamento especificado no existe")
+	}
+
+	d.Level = 1
+	d.Active = existing.Active
+
+	if d.ParentDepartmentID != nil && *d.ParentDepartmentID != "" {
+		if *d.ParentDepartmentID == d.ID {
+			return errors.New("un departamento no puede ser su propio departamento padre")
+		}
+
+		parent, err := s.deptRepo.GetByID(ctx, *d.ParentDepartmentID)
+		if err != nil {
+			return fmt.Errorf("error validando departamento padre: %w", err)
+		}
+		if parent == nil {
+			return errors.New("el departamento padre especificado no existe")
+		}
+		d.Level = parent.Level + 1
+	} else {
+		d.ParentDepartmentID = nil
+	}
+
+	return s.deptRepo.Update(ctx, d)
+}
+
+func (s *DepartmentService) Delete(ctx context.Context, id string) error {
+	if id == "" {
+		return errors.New("el id del departamento es requerido")
+	}
+
+	existing, err := s.deptRepo.GetByID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("error obteniendo departamento: %w", err)
+	}
+	if existing == nil {
+		return errors.New("el departamento especificado no existe")
+	}
+
+	return s.deptRepo.Delete(ctx, id)
+}

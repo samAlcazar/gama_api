@@ -63,6 +63,8 @@ func main() {
 
 	mux.Handle("GET /api/v1/departments", authMW(http.HandlerFunc(deptHandler.List)))
 	mux.Handle("POST /api/v1/departments", authMW(http.HandlerFunc(deptHandler.Create)))
+	mux.Handle("PUT /api/v1/departments/{id}", authMW(http.HandlerFunc(deptHandler.Update)))
+	mux.Handle("DELETE /api/v1/departments/{id}", authMW(http.HandlerFunc(deptHandler.Delete)))
 
 	mux.Handle("GET /api/v1/users", authMW(
 		middleware.RequirePermission("USUARIO_VER")(http.HandlerFunc(userHandler.List)),
@@ -78,6 +80,17 @@ func main() {
 	))
 	mux.Handle("DELETE /api/v1/users/{id}", authMW(
 		middleware.RequirePermission("USUARIO_DESACTIVAR")(http.HandlerFunc(userHandler.Deactivate)),
+	))
+
+	// Roles y Matriz de Permisos
+	mux.Handle("GET /api/v1/roles", authMW(
+		middleware.RequirePermission("USUARIO_VER")(http.HandlerFunc(userHandler.ListRoles)),
+	))
+	mux.Handle("GET /api/v1/permissions", authMW(
+		middleware.RequirePermission("USUARIO_VER")(http.HandlerFunc(userHandler.ListPermissions)),
+	))
+	mux.Handle("PUT /api/v1/roles/{role_name}/permissions", authMW(
+		middleware.RequirePermission("USUARIO_EDITAR")(http.HandlerFunc(userHandler.UpdateRolePermissions)),
 	))
 
 	// Solicitantes / Interesados

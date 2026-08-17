@@ -84,6 +84,74 @@ func (r *UserRepository) UpdateLastAccess(ctx context.Context, userID string) er
 	return nil
 }
 
+func (r *UserRepository) ListRoles(ctx context.Context) ([]*model.Role, error) {
+	query := `SELECT name, description FROM roles ORDER BY name ASC`
+	rows, err := r.db.Pool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("error listando roles: %w", err)
+	}
+	defer rows.Close()
+
+	var roles []*model.Role
+	for rows.Next() {
+		var role model.Role
+		if err := rows.Scan(&role.Name, &role.Description); err != nil {
+			return nil, fmt.Errorf("error escaneando rol: %w", err)
+		}
+
+		perms, err := r.GetPermissionsByRole(ctx, role.Name)
+		if err == nil {
+			role.Permissions = perms
+		}
+		roles = append(roles, &role)
+	}
+	return roles, nil
+}
+
+func (r *UserRepository) ListPermissions(ctx context.Context) ([]*model.Permission, error) {
+	query := `SELECT id, code, description, module FROM permissions ORDER BY module ASC, code ASC`
+	rows, err := r.db.Pool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("error listando permisos: %w", err)
+	}
+	defer rows.Close()
+
+	var permissions []*model.Permission
+	for rows.Next() {
+		var p model.Permission
+		if err := rows.Scan(&p.ID, &p.Code, &p.Description, &p.Module); err != nil {
+			return nil, fmt.Errorf("error escaneando permiso: %w", err)
+		}
+		permissions = append(permissions, &p)
+	}
+	return permissions, nil
+}
+
+func (r *UserRepository) UpdateRolePermissions(ctx context.Context, roleName string, permissionIDs []string) error {
+	tx, err := r.db.Pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("error iniciando transacción: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, `DELETE FROM role_permissions WHERE role_name = $1`, roleName)
+	if err != nil {
+		return fmt.Errorf("error eliminando permisos previos del rol: %w", err)
+	}
+
+	for _, permID := range permissionIDs {
+		if permID == "" {
+			continue
+		}
+		_, err = tx.Exec(ctx, `INSERT INTO role_permissions (role_name, permission_id) VALUES ($1, $2)`, roleName, permID)
+		if err != nil {
+			return fmt.Errorf("error insertando permiso %s para el rol %s: %w", permID, roleName, err)
+		}
+	}
+
+	return tx.Commit(ctx)
+}
+
 func (r *UserRepository) GetAll(ctx context.Context) ([]*model.User, error) {
 	query := `
 		SELECT 

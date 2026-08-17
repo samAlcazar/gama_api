@@ -147,7 +147,7 @@ func (r *RoadmapRepository) ListVisible(ctx context.Context, userID string) ([]*
 	return list, nil
 }
 
-func (r *RoadmapRepository) GetInbox(ctx context.Context, departmentID string) ([]*model.InboxItem, error) {
+func (r *RoadmapRepository) GetInbox(ctx context.Context, departmentID *string) ([]*model.InboxItem, error) {
 	query := `
 		SELECT 
 			movement_id, roadmap_id, roadmap_number, management_year, procedure_code,
@@ -155,7 +155,7 @@ func (r *RoadmapRepository) GetInbox(ctx context.Context, departmentID string) (
 			step_number, destination_department_id, destination_department_name,
 			assigned_user_id, assigned_user_name, entry_at, instruction, movement_status
 		FROM vw_user_inbox
-		WHERE destination_department_id = $1
+		WHERE ($1::UUID IS NULL OR destination_department_id = $1)
 		ORDER BY entry_at DESC
 	`
 	rows, err := r.db.Pool.Query(ctx, query, departmentID)

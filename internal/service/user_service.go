@@ -39,12 +39,16 @@ func (s *UserService) Create(ctx context.Context, u *model.User, rawPassword str
 		return errors.New("los campos user_name, user_ci, user_nick y contraseña son requeridos")
 	}
 
-	dept, err := s.deptRepo.GetByID(ctx, u.DepartmentID)
-	if err != nil {
-		return fmt.Errorf("error validando departamento: %w", err)
-	}
-	if dept == nil {
-		return errors.New("el departamento especificado no existe")
+	if u.DepartmentID != nil && *u.DepartmentID != "" {
+		dept, err := s.deptRepo.GetByID(ctx, *u.DepartmentID)
+		if err != nil {
+			return fmt.Errorf("error validando departamento: %w", err)
+		}
+		if dept == nil {
+			return errors.New("el departamento especificado no existe")
+		}
+	} else {
+		u.DepartmentID = nil
 	}
 
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(rawPassword), bcrypt.DefaultCost)
@@ -72,12 +76,16 @@ func (s *UserService) Update(ctx context.Context, u *model.User) error {
 		return errors.New("el usuario a actualizar no existe")
 	}
 
-	dept, err := s.deptRepo.GetByID(ctx, u.DepartmentID)
-	if err != nil {
-		return fmt.Errorf("error validando departamento: %w", err)
-	}
-	if dept == nil {
-		return errors.New("el departamento especificado no existe")
+	if u.DepartmentID != nil && *u.DepartmentID != "" {
+		dept, err := s.deptRepo.GetByID(ctx, *u.DepartmentID)
+		if err != nil {
+			return fmt.Errorf("error validando departamento: %w", err)
+		}
+		if dept == nil {
+			return errors.New("el departamento especificado no existe")
+		}
+	} else {
+		u.DepartmentID = nil
 	}
 
 	return s.userRepo.Update(ctx, u)
@@ -97,4 +105,19 @@ func (s *UserService) Deactivate(ctx context.Context, id string) error {
 	}
 
 	return s.userRepo.Deactivate(ctx, id)
+}
+
+func (s *UserService) ListRoles(ctx context.Context) ([]*model.Role, error) {
+	return s.userRepo.ListRoles(ctx)
+}
+
+func (s *UserService) ListPermissions(ctx context.Context) ([]*model.Permission, error) {
+	return s.userRepo.ListPermissions(ctx)
+}
+
+func (s *UserService) UpdateRolePermissions(ctx context.Context, roleName string, permissionIDs []string) error {
+	if roleName == "" {
+		return errors.New("el nombre del rol es requerido")
+	}
+	return s.userRepo.UpdateRolePermissions(ctx, roleName, permissionIDs)
 }
