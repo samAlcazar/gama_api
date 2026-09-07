@@ -199,7 +199,7 @@ Este archivo documenta los endpoints HTTP implementados en la API de Go y sirve 
 
 ### 18. Actualizar Estado Global de Trámite (`PATCH /api/v1/roadmaps/{id}/status`)
 *   **Acceso**: Protegido (Requiere permiso `TRAMITE_RESOLVER`)
-*   **Descripción**: Cambia el estado del expediente (`RESUELTO`, `CONCLUIDO`, `ARCHIVADO`, `RECHAZADO`).
+*   **Descripción**: Cambia el estado del expediente (`CONCLUIDO`, `ARCHIVADO`, `RECHAZADO`).
 *   **Cuerpo (JSON)**:
     ```json
     {

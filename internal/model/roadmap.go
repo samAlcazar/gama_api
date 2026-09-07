@@ -61,7 +61,7 @@ type DeriveRoadmapRequest struct {
 }
 
 type UpdateRoadmapStatusRequest struct {
-	Status string `json:"status"` // 'RESUELTO', 'CONCLUIDO', 'ARCHIVADO', 'RECHAZADO'
+	Status string `json:"status"` // 'CONCLUIDO', 'ARCHIVADO', 'RECHAZADO'
 }
 
 type InboxItem struct {

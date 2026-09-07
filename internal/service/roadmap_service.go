@@ -213,8 +213,11 @@ func (s *RoadmapService) Derive(ctx context.Context, roadmapID string, currentUs
 
 func (s *RoadmapService) UpdateStatus(ctx context.Context, roadmapID string, status string) error {
 	st := strings.ToUpper(strings.TrimSpace(status))
-	if st != "RESUELTO" && st != "CONCLUIDO" && st != "ARCHIVADO" && st != "RECHAZADO" {
-		return errors.New("estado no válido. Debe ser 'RESUELTO', 'CONCLUIDO', 'ARCHIVADO' o 'RECHAZADO'")
+	if st == "RESUELTO" {
+		st = "CONCLUIDO"
+	}
+	if st != "CONCLUIDO" && st != "ARCHIVADO" && st != "RECHAZADO" {
+		return errors.New("estado no válido. Debe ser 'CONCLUIDO', 'ARCHIVADO' o 'RECHAZADO'")
 	}
 	return s.roadmapRepo.UpdateStatus(ctx, roadmapID, st)
 }
